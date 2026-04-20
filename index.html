@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>MediCare AI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<script>
+tailwind.config={theme:{extend:{colors:{pri:{50:'#EEFBF4',100:'#D0F3E0',200:'#A3E5C3',300:'#6AD29F',400:'#38B880',500:'#0D9B6A',600:'#087A52',700:'#065F40',800:'#044830'},accent:'#00E59B',bg:'#F2F7F4',dark:'#0F1A15',muted:'#5A6B63',bdr:'#D0E0D6'},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}
+</script>
+<style>
+:root{--pri:#0D9B6A;--pri-dark:#087A52;--pri-light:#EEFBF4;--accent:#00E59B;--bg:#F2F7F4;--dark:#0F1A15;--muted:#5A6B63}
+*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+body{margin:0;font-family:'Plus Jakarta Sans',sans-serif;background:#dce6df;overflow:hidden}
+::-webkit-scrollbar{width:0;display:none}
+
+/* Phone Frame */
+.phone{width:100%;max-width:430px;height:100vh;height:100dvh;margin:0 auto;position:relative;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+@media(min-width:768px){
+  body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(145deg,#c8d9cc,#a8c4ae)}
+  .phone{border-radius:44px;border:7px solid #1a1a1a;box-shadow:0 30px 100px rgba(0,0,0,.35),inset 0 0 0 2px #333;height:92vh;max-height:900px}
+}
+
+/* Status Bar */
+.status-bar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;color:var(--dark);flex-shrink:0;z-index:50}
+
+/* Pages */
+.page{position:absolute;top:0;left:0;right:0;bottom:68px;overflow-y:auto;overflow-x:hidden;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .3s ease,transform .3s ease}
+.page.active{opacity:1;transform:translateY(0);pointer-events:auto}
+
+/* Splash */
+.splash{position:fixed;inset:0;z-index:999;background:linear-gradient(160deg,#0D9B6A,#065F40);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s,transform .5s}
+.splash.hide{opacity:0;transform:scale(1.05);pointer-events:none}
+.splash-logo{width:80px;height:80px;background:rgba(255,255,255,.15);border-radius:22px;display:flex;align-items:center;justify-content:center;animation:splashPulse 1.5s ease-in-out infinite}
+@keyframes splashPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(0,229,155,.4)}50%{transform:scale(1.05);box-shadow:0 0 0 20px rgba(0,229,155,0)}}
+.splash-text{color:#fff;font-size:28px;font-weight:800;margin-top:16px;letter-spacing:-.5px}
+.splash-sub{color:rgba(255,255,255,.7);font-size:13px;margin-top:6px;font-weight:400}
+
+/* Bottom Nav */
+.bottom-nav{height:68px;background:#fff;border-top:1px solid var(--pri-light);display:flex;align-items:center;justify-content:space-around;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);z-index:50}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 12px;border-radius:12px;transition:all .2s;-webkit-user-select:none;user-select:none}
+.nav-item .material-icons-round{font-size:24px;color:var(--muted);transition:color .2s}
+.nav-item span:last-child{font-size:10px;font-weight:600;color:var(--muted);transition:color .2s}
+.nav-item.active .material-icons-round{color:var(--pri)}
+.nav-item.active span:last-child{color:var(--pri)}
+.nav-item.scan-btn{position:relative;top:-16px;background:linear-gradient(135deg,#0D9B6A,#00E59B);padding:14px 16px;border-radius:20px;box-shadow:0 4px 20px rgba(13,155,106,.4)}
+.nav-item.scan-btn .material-icons-round{color:#fff;font-size:28px}
+.nav-item.scan-btn span:last-child{color:var(--pri);font-size:9px;margin-top:2px}
+
+/* Cards */
+.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.02);border:1px solid rgba(208,224,214,.5)}
+
+/* Symptom Steps */
+.sym-step{display:none;animation:fadeSlide .35s ease}
+.sym-step.active{display:block}
+@keyframes fadeSlide{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* Body Part Card */
+.body-card{cursor:pointer;transition:all .2s;border:2px solid transparent}
+.body-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(13,155,106,.15)}
+.body-card.selected{border-color:var(--pri);background:var(--pri-light)}
+
+/* Symptom Chip */
+.sym-chip{cursor:pointer;padding:10px 16px;border-radius:12px;border:1.5px solid var(--pri-light);background:#fff;font-size:13px;font-weight:500;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.sym-chip:hover{border-color:var(--pri)}
+.sym-chip.selected{background:var(--pri);color:#fff;border-color:var(--pri)}
+
+/* Severity Badge */
+.sev-ringan{background:#D1FAE5;color:#065F46}
+.sev-sedang{background:#FEF3C7;color:#92400E}
+.sev-berat{background:#FEE2E2;color:#991B1B}
+
+/* AI Processing */
+.ai-orb{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#0D9B6A,#00E59B);animation:orbPulse 1.5s ease-in-out infinite;position:relative}
+.ai-orb::after{content:'';position:absolute;inset:-10px;border-radius:50%;border:2px solid rgba(0,229,155,.3);animation:orbRing 1.5s ease-in-out infinite}
+@keyframes orbPulse{0%,100%{transform:scale(.9);opacity:.7}50%{transform:scale(1.1);opacity:1}}
+@keyframes orbRing{0%,100%{transform:scale(1);opacity:.3}50%{transform:scale(1.3);opacity:0}}
+
+/* Scan */
+.scan-view{position:relative;height:280px;background:linear-gradient(180deg,#0a0a0a,#1a2a1a);border-radius:16px;overflow:hidden}
+.scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:180px;height:120px}
+.scan-frame::before,.scan-frame::after,.scan-corners::before,.scan-corners::after{content:'';position:absolute;width:30px;height:30px;border-color:var(--accent);border-style:solid;border-width:0}
+.scan-frame::before{top:0;left:0;border-top-width:3px;border-left-width:3px;border-radius:4px 0 0 0}
+.scan-frame::after{top:0;right:0;border-top-width:3px;border-right-width:3px;border-radius:0 4px 0 0}
+.scan-corners::before{bottom:0;left:0;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 4px}
+.scan-corners::after{bottom:0;right:0;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 4px 0}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanMove 2s ease-in-out infinite}
+@keyframes scanMove{0%,100%{top:20%}50%{top:80%}}
+
+/* Chat */
+.chat-bubble{max-width:85%;padding:12px 16px;border-radius:16px;font-size:13.5px;line-height:1.6;animation:bubbleIn .3s ease}
+@keyframes bubbleIn{from{opacity:0;transform:translateY(8px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.chat-user{background:var(--pri);color:#fff;border-bottom-right-radius:4px;margin-left:auto}
+.chat-bot{background:#fff;color:var(--dark);border-bottom-left-radius:4px;border:1px solid rgba(208,224,214,.6)}
+.typing-dots{display:flex;gap:4px;padding:4px 0}
+.typing-dots span{width:7px;height:7px;background:var(--muted);border-radius:50%;animation:typingBounce .6s ease-in-out infinite}
+.typing-dots span:nth-child(2){animation-delay:.15s}
+.typing-dots span:nth-child(3){animation-delay:.3s}
+@keyframes typingBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;opacity:0;pointer-events:none;transition:opacity .3s;display:flex;align-items:flex-end;justify-content:center}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal-sheet{background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:430px;max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform .35s ease;padding:8px 20px 32px}
+.modal-overlay.show .modal-sheet{transform:translateY(0)}
+.modal-handle{width:40px;height:4px;background:#d0d0d0;border-radius:4px;margin:0 auto 16px}
+
+/* Toast */
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:200;background:var(--dark);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:90%}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Toggle */
+.toggle{width:44px;height:26px;border-radius:13px;background:#ccc;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--pri)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle.on::after{transform:translateX(18px)}
+
+/* Quick Chip */
+.quick-chip{padding:8px 14px;border-radius:20px;background:var(--pri-light);color:var(--pri);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;border:1px solid transparent}
+.quick-chip:hover{background:var(--pri);color:#fff}
+
+/* Floating Action */
+.fab{position:absolute;bottom:20px;right:20px;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#0D9B6A,#00E59B);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(13,155,106,.35);transition:transform .2s;z-index:10}
+.fab:hover{transform:scale(1.08)}
+
+/* Input */
+.input-field{width:100%;padding:12px 16px;border:1.5px solid var(--pri-light);border-radius:12px;font-size:14px;font-family:inherit;background:#fff;transition:border-color .2s;outline:none}
+.input-field:focus{border-color:var(--pri)}
+
+/* Progress Bar */
+.progress-track{height:4px;background:var(--pri-light);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#0D9B6A,#00E59B);border-radius:4px;transition:width .4s ease}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:0s!important;transition-duration:0s!important}
+}
+</style>
+</head>
+<body>
+
+<!-- Splash Screen -->
+<div class="splash" id="splash">
+  <div class="splash-logo">
+    <span class="material-icons-round text-white" style="font-size:40px">vaccines</span>
+  </div>
+  <div class="splash-text">MediCare AI</div>
+  <div class="splash-sub">Asisten Kesehatan Cerdas</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Phone Frame -->
+<div class="phone" id="phone">
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span id="clock">09:41</span>
+    <div class="flex items-center gap-1">
+      <span class="material-icons-round" style="font-size:15px">signal_cellular_alt</span>
+      <span class="material-icons-round" style="font-size:15px">wifi</span>
+      <span class="material-icons-round" style="font-size:17px">battery_full</span>
+    </div>
+  </div>
+
+  <!-- ============ PAGE: HOME ============ -->
+  <div class="page active" id="page-home">
+    <!-- Hero -->
+    <div class="relative" style="background:linear-gradient(160deg,#0D9B6A 0%,#065F40 100%);padding:24px 20px 60px;border-radius:0 0 28px 28px">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <p class="text-white/70 text-sm" id="greeting-text">Selamat Pagi</p>
+          <h1 class="text-white text-xl font-bold" style="letter-spacing:-.3px">Apa keluhanmu hari ini?</h1>
+        </div>
+        <div class="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center">
+          <span class="material-icons-round text-white">person</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 bg-white/10 backdrop-blur rounded-2xl px-4 py-3 cursor-pointer" onclick="navigateTo('symptom')" role="button" aria-label="Cek gejala sekarang">
+        <span class="material-icons-round text-accent">search</span>
+        <span class="text-white/80 text-sm">Cek gejala kamu di sini...</span>
+      </div>
+    </div>
+
+    <div class="px-4 -mt-8 pb-6 space-y-5">
+      <!-- Quick Actions -->
+      <div class="grid grid-cols-4 gap-3">
+        <div class="card flex flex-col items-center py-4 gap-2 cursor-pointer" onclick="navigateTo('symptom')" role="button">
+          <div class="w-11 h-11 rounded-xl bg-pri-50 flex items-center justify-center"><span class="material-icons-round text-pri-500" style="font-size:22px">coronavirus</span></div>
+          <span class="text-xs font-semibold text-dark">Cek Gejala</span>
+        </div>
+        <div class="card flex flex-col items-center py-4 gap-2 cursor-pointer" onclick="navigateTo('scan')" role="button">
+          <div class="w-11 h-11 rounded-xl bg-pri-50 flex items-center justify-center"><span class="material-icons-round text-pri-500" style="font-size:22px">qr_code_scanner</span></div>
+          <span class="text-xs font-semibold text-dark">Scan Obat</span>
+        </div>
+        <div class="card flex flex-col items-center py-4 gap-2 cursor-pointer" onclick="navigateTo('reminder')" role="button">
+          <div class="w-11 h-11 rounded-xl bg-pri-50 flex items-center justify-center"><span class="material-icons-round text-pri-500" style="font-size:22px">alarm</span></div>
+          <span class="text-xs font-semibold text-dark">Pengingat</span>
+        </div>
+        <div class="card flex flex-col items-center py-4 gap-2 cursor-pointer" onclick="navigateTo('chat')" role="button">
+          <div class="w-11 h-11 rounded-xl bg-pri-50 flex items-center justify-center"><span class="material-icons-round text-pri-500" style="font-size:22px">smart_toy</span></div>
+          <span class="text-xs font-semibold text-dark">Konsultasi</span>
+        </div>
+      </div>
+
+      <!-- Today's Reminders -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-bold text-dark text-base">Pengingat Hari Ini</h2>
+          <span class="text-pri-500 text-xs font-semibold cursor-pointer" onclick="navigateTo('reminder')">Lihat Semua</span>
+        </div>
+        <div id="home-reminders" class="space-y-2"></div>
+      </div>
+
+      <!-- Health Tip -->
+      <div>
+        <h2 class="font-bold text-dark text-base mb-3">Tips Kesehatan</h2>
+        <div class="card border-l-4" style="border-left-color:var(--accent)">
+          <div class="flex items-start gap-3">
+            <span class="material-icons-round text-accent mt-0.5" style="font-size:20px">lightbulb</span>
+            <div>
+              <p class="text-sm text-dark leading-relaxed" id="health-tip"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Popular Drugs -->
+      <div>
+        <h2 class="font-bold text-dark text-base mb-3">Obat Populer</h2>
+        <div class="flex gap-3 overflow-x-auto pb-2" id="popular-drugs" style="scroll-snap-type:x mandatory"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PAGE: SYMPTOM CHECKER ============ -->
+  <div class="page" id="page-symptom">
+    <div class="px-4 pt-2 pb-6">
+      <div class="flex items-center gap-3 mb-1">
+        <button onclick="symBack()" class="w-9 h-9 rounded-xl bg-pri-50 flex items-center justify-center" aria-label="Kembali"><span class="material-icons-round text-pri-500" style="font-size:20px">arrow_back</span></button>
+        <h1 class="font-bold text-dark text-lg">Cek Gejala</h1>
+      </div>
+      <p class="text-muted text-xs mb-4 ml-12">AI akan menganalisis gejala Anda</p>
+
+      <!-- Progress -->
+      <div class="progress-track mb-5"><div class="progress-fill" id="sym-progress" style="width:33%"></div></div>
+
+      <!-- Step 1: Body Part -->
+      <div class="sym-step active" id="sym-step-1">
+        <h2 class="font-bold text-dark text-sm mb-4">Pilih area tubuh yang bermasalah</h2>
+        <div class="grid grid-cols-3 gap-3" id="body-parts-grid"></div>
+        <button class="w-full mt-6 py-3.5 rounded-2xl font-bold text-sm text-white transition-all" style="background:linear-gradient(135deg,#0D9B6A,#00E59B)" id="sym-next-1" disabled onclick="symNext(2)">Lanjutkan</button>
+      </div>
+
+      <!-- Step 2: Symptoms -->
+      <div class="sym-step" id="sym-step-2">
+        <h2 class="font-bold text-dark text-sm mb-1">Pilih gejala yang Anda rasakan</h2>
+        <p class="text-muted text-xs mb-4">Bisa pilih lebih dari satu</p>
+        <div class="flex flex-wrap gap-2" id="symptoms-list"></div>
+        <div class="flex gap-3 mt-6">
+          <button class="flex-1 py-3.5 rounded-2xl font-bold text-sm border-2 border-pri-100 text-pri-500" onclick="symNext(1)">Kembali</button>
+          <button class="flex-1 py-3.5 rounded-2xl font-bold text-sm text-white" style="background:linear-gradient(135deg,#0D9B6A,#00E59B)" id="sym-next-2" disabled onclick="symAnalyze()">Analisis Gejala</button>
+        </div>
+      </div>
+
+      <!-- Step 3: AI Processing -->
+      <div class="sym-step" id="sym-step-3">
+        <div class="flex flex-col items-center justify-center py-12">
+          <div class="ai-orb mb-6"></div>
+          <h2 class="font-bold text-dark text-base mb-2">Menganalisis Gejala</h2>
+          <p class="text-muted text-sm" id="ai-status">Mengidentifikasi pola gejala...</p>
+          <div class="mt-6 space-y-2 w-64" id="ai-steps"></div>
+        </div>
+      </div>
+
+      <!-- Step 4: Results -->
+      <div class="sym-step" id="sym-step-4">
+        <h2 class="font-bold text-dark text-base mb-1">Hasil Analisis</h2>
+        <p class="text-muted text-xs mb-4">Berdasarkan gejala yang dipilih</p>
+        <div class="space-y-3" id="sym-results"></div>
+        <div class="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
+          <div class="flex items-start gap-2">
+            <span class="material-icons-round text-amber-500" style="font-size:18px">warning</span>
+            <p class="text-xs text-amber-800 leading-relaxed">Hasil ini bukan diagnosis medis. Konsultasikan dengan dokter untuk penanganan yang tepat.</p>
+          </div>
+        </div>
+        <button class="w-full mt-4 py-3.5 rounded-2xl font-bold text-sm border-2 border-pri-100 text-pri-500" onclick="symReset()">Cek Gejala Lain</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PAGE: SCAN ============ -->
+  <div class="page" id="page-scan">
+    <div class="px-4 pt-2 pb-6">
+      <h1 class="font-bold text-dark text-lg mb-4">Scan Obat</h1>
+
+      <!-- Scan View -->
+      <div class="scan-view mb-4" id="scan-view">
+        <div class="scan-frame">
+          <div class="scan-corners" style="position:absolute;inset:0"></div>
+          <div class="scan-line" id="scan-line"></div>
+        </div>
+        <div class="absolute bottom-4 left-0 right-0 text-center">
+          <p class="text-white/60 text-xs">Arahkan kamera ke kemasan obat</p>
+        </div>
+      </div>
+
+      <button class="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2" style="background:linear-gradient(135deg,#0D9B6A,#00E59B)" id="scan-btn" onclick="performScan()">
+        <span class="material-icons-round" style="font-size:20px">center_focus_strong</span>
+        Mulai Scan
+      </button>
+
+      <!-- Scan History -->
+      <div class="mt-6">
+        <h2 class="font-bold text-dark text-sm mb-3">Riwayat Scan</h2>
+        <div class="space-y-2" id="scan-history">
+          <div class="card flex items-center gap-3 cursor-pointer" onclick="showDrugDetail('paracetamol')">
+            <div class="w-10 h-10 rounded-xl bg-pri-50 flex items-center justify-center flex-shrink-0"><span class="material-icons-round text-pri-500" style="font-size:20px">medication</span></div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-dark truncate">Paracetamol 500mg</p><p class="text-xs text-muted">Scan 2 jam lalu</p></div>
+            <span class="material-icons-round text-muted" style="font-size:18px">chevron_right</span>
+          </div>
+          <div class="card flex items-center gap-3 cursor-pointer" onclick="showDrugDetail('cetirizine')">
+            <div class="w-10 h-10 rounded-xl bg-pri-50 flex items-center justify-center flex-shrink-0"><span class="material-icons-round text-pri-500" style="font-size:20px">medication</span></div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-dark truncate">Cetirizine 10mg</p><p class="text-xs text-muted">Scan kemarin</p></div>
+            <span class="material-icons-round text-muted" style="font-size:18px">chevron_right</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PAGE: REMINDER ============ -->
+  <div class="page" id="page-reminder">
+    <div class="px-4 pt-2 pb-24">
+      <h1 class="font-bold text-dark text-lg mb-1">Pengingat Obat</h1>
+      <p class="text-muted text-xs mb-4">Jangan pernah lupa minum obat</p>
+      <div class="space-y-3" id="reminder-list"></div>
+      <div id="reminder-empty" class="hidden text-center py-12">
+        <span class="material-icons-round text-pri-200" style="font-size:64px">alarm_off</span>
+        <p class="text-muted text-sm mt-3">Belum ada pengingat</p>
+      </div>
+    </div>
+    <div class="fab" onclick="openReminderModal()" role="button" aria-label="Tambah pengingat">
+      <span class="material-icons-round" style="font-size:26px">add</span>
+    </div>
+  </div>
+
+  <!-- ============ PAGE: CHAT ============ -->
+  <div class="page" id="page-chat" style="display:flex;flex-direction:column">
+    <div class="px-4 pt-2 pb-3 flex-shrink-0 border-b border-bdr">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#0D9B6A,#00E59B)">
+          <span class="material-icons-round text-white" style="font-size:22px">smart_toy</span>
+        </div>
+        <div>
+          <h1 class="font-bold text-dark text-sm">MediCare Assistant</h1>
+          <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-400"></span><span class="text-xs text-muted">Online</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-4 py-4 space-y-3" id="chat-messages"></div>
+
+    <!-- Quick Chips -->
+    <div class="flex gap-2 px-4 pb-2 overflow-x-auto flex-shrink-0" id="chat-chips">
+      <div class="quick-chip" onclick="sendQuickChat('Saya sering sakit kepala')">Sakit kepala</div>
+      <div class="quick-chip" onclick="sendQuickChat('Anak saya demam')">Demam</div>
+      <div class="quick-chip" onclick="sendQuickChat('Saya batuk pilek sudah 3 hari')">Batuk pilek</div>
+      <div class="quick-chip" onclick="sendQuickChat('Perut saya sakit dan mual')">Sakit perut</div>
+      <div class="quick-chip" onclick="sendQuickChat('Saya sulit tidur malam')">Insomnia</div>
+    </div>
+
+    <!-- Input -->
+    <div class="flex items-end gap-2 px-4 py-3 border-t border-bdr bg-white flex-shrink-0">
+      <input type="text" class="input-field flex-1" id="chat-input" placeholder="Tulis keluhan atau pertanyaan..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-white" style="background:linear-gradient(135deg,#0D9B6A,#00E59B)" onclick="sendChat()" aria-label="Kirim pesan">
+        <span class="material-icons-round" style="font-size:20px">send</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav" role="navigation" aria-label="Menu utama">
+    <div class="nav-item active" data-page="home" onclick="navigateTo('home')" role="button" tabindex="0">
+      <span class="material-icons-round">home</span>
+      <span>Beranda</span>
+    </div>
+    <div class="nav-item" data-page="symptom" onclick="navigateTo('symptom')" role="button" tabindex="0">
+      <span class="material-icons-round">coronavirus</span>
+      <span>Cek Gejala</span>
+    </div>
+    <div class="nav-item scan-btn" data-page="scan" onclick="navigateTo('scan')" role="button" tabindex="0">
+      <span class="material-icons-round">qr_code_scanner</span>
+      <span>Scan</span>
+    </div>
+    <div class="nav-item" data-page="reminder" onclick="navigateTo('reminder')" role="button" tabindex="0">
+      <span class="material-icons-round">alarm</span>
+      <span>Pengingat</span>
+    </div>
+    <div class="nav-item" data-page="chat" onclick="navigateTo('chat')" role="button" tabindex="0">
+      <span class="material-icons-round">smart_toy</span>
+      <span>Chat</span>
+    </div>
+  </nav>
+</div>
+
+<!-- ============ MODAL: Drug Detail ============ -->
+<div class="modal-overlay" id="modal-drug">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div id="drug-detail-content"></div>
+  </div>
+</div>
+
+<!-- ============ MODAL: Add Reminder ============ -->
+<div class="modal-overlay" id="modal-reminder">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 class="font-bold text-dark text-base mb-4">Tambah Pengingat</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="text-xs font-semibold text-muted block mb-1.5">Nama Obat</label>
+        <input type="text" class="input-field" id="rem-drug" placeholder="cth: Paracetamol 500mg">
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-muted block mb-1.5">Dosis</label>
+        <input type="text" class="input-field" id="rem-dose" placeholder="cth: 1 tablet">
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-muted block mb-1.5">Frekuensi</label>
+        <select class="input-field" id="rem-freq">
+          <option value="1">1x sehari</option>
+          <option value="2" selected>2x sehari</option>
+          <option value="3">3x sehari</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-muted block mb-1.5">Waktu Minum</label>
+        <div class="flex gap-2" id="rem-times"></div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-muted block mb-1.5">Durasi (hari)</label>
+        <input type="number" class="input-field" id="rem-days" value="5" min="1" max="30">
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-muted block mb-1.5">Catatan</label>
+        <input type="text" class="input-field" id="rem-notes" placeholder="cth: Setelah makan">
+      </div>
+      <button class="w-full py-3.5 rounded-2xl font-bold text-sm text-white" style="background:linear-gradient(135deg,#0D9B6A,#00E59B)" onclick="saveReminder()">Simpan Pengingat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const bodyParts = [
+  { id:'head', name:'Kepala', icon:'psychology' },
+  { id:'throat', name:'Tenggorokan', icon:'record_voice_over' },
+  { id:'chest', name:'Dada', icon:'monitor_heart' },
+  { id:'stomach', name:'Perut', icon:'spa' },
+  { id:'skin', name:'Kulit', icon:'fingerprint' },
+  { id:'general', name:'Umum', icon:'health_and_safety' }
+];
+
+const symptoms = {
+  head:[
+    {id:'h1',name:'Sakit kepala'},{id:'h2',name:'Pusing berputar'},{id:'h3',name:'Migrain'},{id:'h4',name:'Penglihatan kabur'},{id:'h5',name:'Mata merah'},{id:'h6',name:'Telinga berdenging'}
+  ],
+  throat:[
+    {id:'t1',name:'Sakit tenggorokan'},{id:'t2',name:'Batuk kering'},{id:'t3',name:'Pilek'},{id:'t4',name:'Sulit menelan'},{id:'t5',name:'Suara serak'},{id:'t6',name:'Bercak putih di tenggorokan'}
+  ],
+  chest:[
+    {id:'c1',name:'Napas sesak'},{id:'c2',name:'Batuk berdahak'},{id:'c3',name:'Nyeri dada'},{id:'c4',name:'Detak jantung cepat'},{id:'c5',name:'Mengi saat bernapas'},{id:'c6',name:'Batuk berdarah'}
+  ],
+  stomach:[
+    {id:'s1',name:'Sakit perut'},{id:'s2',name:'Mual'},{id:'s3',name:'Muntah'},{id:'s4',name:'Diare'},{id:'s5',name:'Perut kembung'},{id:'s6',name:'Nafsu makan turun'}
+  ],
+  skin:[
+    {id:'k1',name:'Gatal-gatal'},{id:'k2',name:'Ruam merah'},{id:'k3',name:'Bintik-bintik'},{id:'k4',name:'Kulit kering'},{id:'k5',name:'Pembengkakan'},{id:'k6',name:'Luka tidak sembuh'}
+  ],
+  general:[
+    {id:'g1',name:'Demam'},{id:'g2',name:'Lemas'},{id:'g3',name:'Menggigil'},{id:'g4',name:'Nyeri otot'},{id:'g5',name:'Nyeri sendi'},{id:'g6',name:'Sulit tidur'},{id:'g7',name:'Kelelahan kronis'}
+  ]
+};
+
+const conditions = [
+  {name:'Demam Virus (Flu Biasa)',severity:'ringan',symptoms:['g1','g2','g3','t2','t3'],desc:'Infeksi virus pernapasan atas yang umum terjadi dan biasanya sembuh dalam 5-7 hari.',tips:['Istirahat cukup 7-8 jam','Minum air putih minimal 8 gelas/hari','Kompres dingin pada dahi','Konsumsi makanan bergizi seimbang'],drugs:['paracetamol'],doc:'Suhu >39°C lebih dari 3 hari, sesak napas, atau gejala memburuk setelah 5 hari.'},
+  {name:'Radang Tenggorokan (Faringitis)',severity:'ringan',symptoms:['t1','t2','t4','h1'],desc:'Peradangan pada tenggorokan yang bisa disebabkan virus atau bakteri.',tips:['Kumur air garam hangat','Minum air hangat dengan madu','Hindari makanan pedas dan asam','Istirahat suara'],drugs:['paracetamol','amoxicillin'],doc:'Sulit menelan berat, demam tinggi, atau bercak putih di tenggorokan.'},
+  {name:'Vertigo',severity:'sedang',symptoms:['h2','h4','h6','g2'],desc:'Sensasi berputar atau kehilangan keseimbangan yang bisa sangat mengganggu aktivitas.',tips:['Duduk atau berbaring saat serangan','Hindari gerakan kepala tiba-tiba','Fokus pandang ke satu titik tetap','Minum cukup air'],drugs:['betahistine'],doc:'Vertigo disertai mati rasa, sulit berbicara, atau kelemahan di satu sisi tubuh.'},
+  {name:'Gangguan Lambung (Maag)',severity:'ringan',symptoms:['s1','s2','s5','s6'],desc:'Irritasi pada lapisan lambung yang menyebabkan rasa perih dan mual.',tips:['Makan teratur, jangan telat makan','Hindari makanan asam dan pedas','Tidur minimal 2 jam setelah makan','Kunyah makanan sampai halus'],drugs:['omeprazole','antacid'],doc:'Muntah berdarah, tinja hitam, atau nyeri yang menjalar ke punggung.'},
+  {name:'Alergi Kulit',severity:'ringan',symptoms:['k1','k2','k3','k5'],desc:'Reaksi kulit akibat alergen seperti makanan, debu, atau obat tertentu.',tips:['Identifikasi dan hindari pemicu alergi','Mandii dengan air dingin','Gunakan losion kalamin','Hindari menggaruk area gatal'],drugs:['cetirizine','loratadine'],doc:'Gatal disertai sesak napas, bengkak di wajah, atau pingsan.'},
+  {name:'Diare Akut',severity:'sedang',symptoms:['s4','s1','s3','s2','g2'],desc:'Buang air besar lembek atau cair lebih dari 3 kali sehari, biasanya akibat infeksi.',tips:['Minum ORS untuk mencegah dehidrasi','Makan makanan lunak (bubur, pisang)','Hindari makanan bersantan dan pedas','Jaga kebersihan tangan'],drugs:['zinc','loperamide','ors'],doc:'Diare lebih dari 3 hari, tinja berdarah, atau tanda dehidrasi berat.'},
+  {name:'Insomnia',severity:'ringan',symptoms:['g6','g7','h1','g4'],desc:'Kesulitan memulai atau mempertahankan tidur yang memengaruhi kualitas hidup.',tips:['Tetapkan jadwal tidur konsisten','Hindari layar 1 jam sebelum tidur','Coba teknik pernapasan 4-7-8','Olahraga ringan di pagi hari'],drugs:['diphenhydramine'],doc:'Insomnia lebih dari 4 minggu, mengganggu pekerjaan, atau disertai dada berdebar.'},
+  {name:'ISPA (Infeksi Saluran Pernapasan Atas)',severity:'sedang',symptoms:['t1','t2','t3','g1','h1','c1'],desc:'Infeksi pada saluran napas atas yang melibatkan hidung, tenggorokan, dan sinus.',tips:['Banyak minum air hangat','Gunakan humidifier','Mandi air hangat untuk menguapkan','Hindari asap rokok'],drugs:['paracetamol','cetirizine'],doc:'Sesak napas menetap, demam >38.5°C selama 5 hari, atau batuk berdarah.'}
+];
+
+const drugDB = {
+  paracetamol:{name:'Paracetamol',generic:'Paracetamol 500mg',cat:'Analgesik & Antipiretik',brand:['Panadol','Bodrex','Biogesic','Sanmol'],dose:'Dewasa: 1-2 tablet setiap 4-6 jam (maks 8 tablet/hari)\nAnak 6-12 thn: 1 tablet setiap 6-8 jam',ind:['Demam','Sakit kepala','Nyeri ringan','Nyeri gigi'],warn:['Jangan melebihi dosis maksimal','Tidak untuk gangguan hati berat','Hindari konsumsi bersamaan alkohol'],price:'Rp 3.000 - 15.000',otc:true},
+  amoxicillin:{name:'Amoxicillin',generic:'Amoxicillin 500mg',cat:'Antibiotik',brand:['Amoxilin','Yusimox','Moxaclav'],dose:'Dewasa: 250-500 mg setiap 8 jam selama 5-7 hari',ind:['Infeksi bakteri','Radang tenggorokan','Infeksi saluran kemih','Infeksi telinga'],warn:['Harus dengan resep dokter','Selesaikan seluruh dosis meski sudah sembuh','Berhenti jika ada reaksi alergi','Tidak efektif untuk infeksi virus'],price:'Rp 15.000 - 50.000',otc:false},
+  omeprazole:{name:'Omeprazole',generic:'Omeprazole 20mg',cat:'Proton Pump Inhibitor',brand:['Lokev','Omez','Medicastat'],dose:'Dewasa: 1 kapsul sebelum makan pagi, selama 2-4 minggu',ind:['Maag','GERD (asam lambung naik)','Tukak lambung','H. pylori'],warn:['Konsumsi 30 menit sebelum makan','Tidak untuk jangka panjang tanpa dokter','Beri tahu dokter obat lain yang dikonsumsi'],price:'Rp 8.000 - 35.000',otc:false},
+  cetirizine:{name:'Cetirizine',generic:'Cetirizine 10mg',cat:'Antihistamin',brand:['Cetrizin','Allergy','Riducon','Tracizine'],dose:'Dewasa: 1 tablet sehari\nAnak 2-6 thn: 5 mg sehari',ind:['Alergi hidung','Gatal-gatal','Ruam kulit','Bersin-bersin'],warn:['Dapat menyebabkan kantuk','Hindari mengemudi setelah minum','Jangan digandakan dosis'],price:'Rp 3.000 - 20.000',otc:true},
+  loratadine:{name:'Loratadine',generic:'Loratadine 10mg',cat:'Antihistamin',brand:['Claritin','Loratadine','Wincold'],dose:'Dewasa: 1 tablet sehari',ind:['Alergi musiman','Gatal kronis','Rinitis alergi'],warn:['Minimal risiko kantuk','Hindari jika alergi terhadap loratadine','Konsultasi dokter untuk ibu hamil'],price:'Rp 4.000 - 25.000',otc:true},
+  betahistine:{name:'Betahistine',generic:'Betahistine Mesylate 12mg',cat:'Antivertigo',brand:['Betaserc','Vertigoheel','Merislon'],dose:'Dewasa: 1-2 tablet 3x sehari',ind:['Vertigo','Sakit kepala vertiginosa','Tinnitus','Penyakit Meniere'],warn:['Harus dengan resep dokter','Efek samping: mual ringan','Tidak untuk penderita tukak lambung aktif'],price:'Rp 20.000 - 80.000',otc:false},
+  ors:{name:'Oralit (ORS)',generic:'Natrium Klorida + Dekstrosa',cat:'Rehidrasi Oral',brand:['Oralit','Electrolit','Pedialyte'],dose:'Larutkan 1 sachet dalam 200 ml air matang, minum selang-seling',ind:['Diare','Dehidrasi','Muntah berlebihan','Demam tinggi'],warn:['Gunakan air matang hangat','Minum dalam 24 jam setelah dilarutkan','Segera ke dokter jika dehidrasi berat'],price:'Rp 2.000 - 8.000',otc:true},
+  diphenhydramine:{name:'Diphenhydramine',generic:'Diphenhydramine HCl 25mg',cat:'Antihistamin Sedatif',brand:['Incidal','Vomisec','Benadryl'],dose:'Dewasa: 1-2 tablet sebelum tidur',ind:['Insomnia ringan','Alergi berat','Mabuk perjalanan'],warn:['Menyebabkan kantuk berat','Jangan mengemudi setelah minum','Tidak untuk penggunaan jangka panjang'],price:'Rp 3.000 - 12.000',otc:true},
+  antacid:{name:'Antacid (Suspensi)',generic:'Mg(OH)2 + Al(OH)3',cat:'Antasida',brand:['Maalox','Mylanta','Promag','Gaviscon'],dose:'15-30 ml setelah makan dan sebelum tidur',ind:['Maag akut','Heartburn','Kembung','Asam lambung berlebih'],warn:['Jangan konsumsi bersama obat lain (jarak 2 jam)','Bisa menyebabkan diare atau sembelit','Tidak untuk jangka panjang'],price:'Rp 10.000 - 40.000',otc:true},
+  zinc:{name:'Zinc Sulfat',generic:'Zinc Sulfat 20mg',cat:'Suplemen Mineral',brand:['Zincat','Cap Zinc','Nutrizinc'],dose:'Anak: 10-20 mg/hari selama 10-14 hari\nDewasa: 20-40 mg/hari',ind:['Diare pada anak','Pemulihan daya tahan tubuh','Defisiensi seng'],warn:['Minum dengan makanan untuk mengurangi mual','Jangan melebihi dosis','Konsultasi dokter untuk penggunaan >2 minggu'],price:'Rp 5.000 - 20.000',otc:true},
+  loperamide:{name:'Loperamide',generic:'Loperamide HCl 2mg',cat:'Antidiare',brand:['Imodium','Lopamid','Diapet'],dose:'Dewasa: 2 tablet pertama, lalu 1 tablet setelah setiap BAB cair (maks 8 tablet/hari)',ind:['Diare akut non-spesifik','Diare traveler'],warn:['Tidak untuk diare berdarah','Tidak untuk anak <2 tahun','Hentikan jika tidak ada perubahan dalam 48 jam'],price:'Rp 5.000 - 25.000',otc:true}
+};
+
+const healthTips = [
+  'Minum 8 gelas air putih sehari membantu menjaga fungsi organ tubuh dan mencegah dehidrasi. Mulai dari bangun tidur, minum 1 gelas air hangat.',
+  'Tidur 7-8 jam setiap malam memperkuat sistem imun dan meningkatkan daya konsentrasi. Hindari layar ponsel 1 jam sebelum tidur.',
+  'Olahraga 30 menit sehari, seperti jalan kaki cepat, menurunkan risiko penyakit jantung hingga 35% dan meningkatkan mood.',
+  'Cuci tangan dengan sabun selama 20 detik adalah cara paling efektif mencegah penyebaran kuman. Lakukan sebelum makan dan setelah dari toilet.',
+  'Mengonsumsi buah dan sayur 5 porsi sehari membantu memenuhi kebutuhan vitamin, mineral, dan serat untuk tubuh yang sehat.',
+  'Kelola stres dengan teknik pernapasan 4-7-8: tarik napas 4 detik, tahan 4 detik, hembuskan 6 detik. Ulangi 4 kali.'
+];
+
+// Chatbot responses
+const chatResponses = [
+  {kw:['sakit kepala','pusing','kepala pusing','migrain'],title:'Tentang Sakit Kepala',body:'Sakit kepala adalah keluhan umum yang bisa disebabkan oleh stres, dehidrasi, kurang tidur, atau masalah medis tertentu. Sebagian besar sakit kepala tidak berbahaya.',tips:['Minum air putih cukup dan istirahat','Kompres dingin atau hangat di area kepala','Hindari cahaya dan suara berlebihan','Paracetamol 500mg dapat membantu (maks 3x/hari)'],doc:'Segera ke dokter jika sakit kepala sangat hebat, tiba-tiba, disertai lemah di satu sisi tubuh, penglihatan kabur, atau kebingungan.'},
+  {kw:['demam','panas','suhu tubuh tinggi','anak demam'],title:'Tentang Demam',body:'Demam (suhu >37.5°C) adalah respons tubuh melawan infeksi. Demam pada anak bisa naik turun dan biasanya bukan kondisi berbahaya.',tips:['Kompres air hangat di dahi, ketiak, dan lipat paha','Minum air putih atau oralit secara rutin','Gunakan pakaian tipis agar panas mudah keluar','Paracetamol sesuai dosis berat badan'],doc:'Segera ke dokter jika demam >39°C, kejang, rewel terus, tidak mau minum, atau demam >3 hari pada anak.'},
+  {kw:['batuk','pilek','flu','hidung tersumbat','bersin'],title:'Tentang Batuk Pilek & Flu',body:'Flu dan batuk pilek biasanya disebabkan virus dan sembuh sendiri dalam 5-7 hari. Antibiotik tidak efektif untuk infeksi virus.',tips:['Minum air hangat dengan madu dan lemon','Istirahat cukup dan hindari cuaca dingin','Gunakan humidifier atau uap air panas','Cetirizine dapat membantu mengurangi pilek'],doc:'Ke dokter jika batuk >2 minggu, sesak napas, dahak berdarah, atau demam tinggi >5 hari.'},
+  {kw:['sakit perut','mual','perut kembung','maag','asam lambung'],title:'Tentang Sakit Perut & Maag',body:'Sakit perut dan maag sering dipicu oleh pola makan tidak teratur, stres, makanan pedas/asin, atau infeksi lambung.',tips:['Makan teratur, jangan telat makan','Kunyah makanan sampai halus','Antacid dapat meredakan gejala akut','Omeprazole untuk maag kronis (perlu resep)'],doc:'Segera ke dokter jika muntah berdarah, tinja hitam, nyeri hebat tiba-tiba, atau perut keras seperti papan.'},
+  {kw:['alergi','gatal','ruam','kulit merah','biduran'],title:'Tentang Alergi Kulit',body:'Alergi kulit bisa dipicu makanan (seafood, kacang), debu, serangga, atau obat. Gejala berupa gatal, ruam merah, dan bengkak.',tips:['Identifikasi dan hindari pemicu alergi','Cetirizine atau Loratadine untuk meredakan gatal','Losion kalamin untuk mengurangi ruam','Mandi air dingin, hindari air panas'],doc:'Segera ke IGD jika alergi disertai sesak napas, bengkak di wajah/bibir, pusing, atau pingsan (reaksi anafilaksis).'},
+  {kw:['tidur','insomnia','sulit tidur','tidak bisa tidur','gelisah malam'],title:'Tentang Insomnia',body:'Insomnia adalah kesulitan memulai atau mempertahankan tidur yang berdampak pada aktivitas esok harinya. Penyebab umum: stres, kebiasaan buruk, atau kondisi medis.',tips:['Tetapkan jam tidur dan bangun yang konsisten','Hindari kafein setelah jam 2 siang','Matikan layar 1 jam sebelum tidur','Coba teknik relaksasi pernapasan 4-7-8'],doc:'Konsultasi dokter jika insomnia >4 minggu, mengganggu pekerjaan, atau disertai dada berdebar dan napas tersengal.'},
+  {kw:['nyeri sendi','nyeri otot','rematik','pegal','linu'],title:'Tentang Nyeri Sendi & Otot',body:'Nyeri sendi dan otot bisa disebabkan oleh aktivitas berlebihan, postur buruk, usia, atau kondisi seperti arthritis dan rematik.',tips:['Istilahat area yang nyeri','Kompres hangat untuk otot, dingin untuk sendi bengkak','Ibuprofen untuk pereda nyeri (maks 3x/hari)','Peregangan ringan secara teratur'],doc:'Ke dokter jika nyeri disertai bengkak kemerahan, demam, berat badan turun tanpa sebab, atau nyeri tidak membaik setelah 2 minggu.'},
+  {kw:['darah tinggi','hipertensi','tekanan darah','tensi'],title:'Tentang Hipertensi',body:'Hipertensi (tekanan darah >140/90 mmHg) sering disebut "silent killer" karena jarang menimbulkan gejala tapi bisa merusak organ secara perlahan.',tips:['Kurangi asupan garam (<2 gram/hari)','Olahraga aerobik 150 menit/minggu','Kurangi stres dan cukup tidur','Rutin kontrol tekanan darah'],doc:'Segera ke dokter jika tekanan darah >180/120, sakit kepala hebat, penglihatan kabur, sesak napas, atau nyeri dada.'},
+  {kw:['diabetes','gula darah','kencing manis','gula tinggi'],title:'Tentang Diabetes',body:'Diabetes terjadi ketika tubuh tidak cukup memproduksi insulin atau tidak menggunakannya dengan efektif, menyebabkan gula darah tinggi.',tips:['Kontrol asupan karbohidrat dan gula','Olahraga rutin minimal 150 menit/minggu','Periksa gula darah secara berkala','Jaga berat badan ideal'],doc:'Segera ke dokter jika sering haus, sering kencing, penurunan berat badan drastis, luka yang lama sembuh, atau penglihatan kabur.'},
+  {kw:['nutrisi','makanan sehat','diet','vitamin','gizi'],title:'Tentang Nutrisi Seimbang',body:'Gizi seimbang adalah kunci kesehatan. Prinsip "Isi Piringku": separuh sayur dan buah, seperempat karbohidrat, seperempat protein.',tips:['Makan 3x sehari dengan selingan 2x sehat','Prioritaskan protein hewani dan nabati','Pilih karbohidrat kompleks (nasi merah, kentang)','Vitamin D dari paparan matahari pagi 15 menit'],doc:'Konsultasi ahli gizi jika memiliki kondisi khusus (diabetes, hipertensi, alergi makanan) atau ingin program diet tertentu.'}
+];
+
+const defaultChat = {title:'MediCare Assistant',body:'Terima kasih atas pertanyaan Anda. Saya bisa membantu memberikan informasi umum tentang berbagai kondisi kesehatan dan obat-obatan. Namun, untuk diagnosis dan pengobatan yang tepat, silakan konsultasikan dengan tenaga medis profesional.',tips:['Gunakan fitur "Cek Gejala" untuk analisis lebih detail','Coba tanyakan tentang: sakit kepala, demam, batuk, alergi, maag, dll','Konsultasi dokter untuk kondisi yang memerlukan pemeriksaan langsung'],doc:'Informasi yang saya berikan bersifat edukatif dan bukan pengganti saran medis profesional.'};
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  currentPage: 'home',
+  selectedBody: null,
+  selectedSymptoms: [],
+  reminders: [
+    {id:1,drug:'Paracetamol 500mg',dose:'1 tablet',freq:3,times:['08:00','14:00','20:00'],active:true,days:5,notes:'Setelah makan'},
+    {id:2,drug:'Omeprazole 20mg',dose:'1 kapsul',freq:1,times:['07:00'],active:true,days:14,notes:'30 menit sebelum makan'},
+    {id:3,drug:'Cetirizine 10mg',dose:'1 tablet',freq:1,times:['21:00'],active:false,days:7,notes:'Saat gejala alergi muncul'}
+  ],
+  chatHistory: [],
+  scanCount: 0
+};
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function navigateTo(page) {
+  if (state.currentPage === page) return;
+  state.currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.page === page);
+  });
+  // Scroll to top
+  const el = document.getElementById('page-' + page);
+  if (el) el.scrollTop = 0;
+}
+
+// ============================================================
+// CLOCK
+// ============================================================
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = h + ':' + m;
+}
+
+// ============================================================
+// GREETING
+// ============================================================
+function updateGreeting() {
+  const h = new Date().getHours();
+  let g = 'Selamat Pagi';
+  if (h >= 11 && h < 15) g = 'Selamat Siang';
+  else if (h >= 15 && h < 18) g = 'Selamat Sore';
+  else if (h >= 18 || h < 5) g = 'Selamat Malam';
+  document.getElementById('greeting-text').textContent = g;
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// HOME PAGE
+// ============================================================
+function renderHomeReminders() {
+  const el = document.getElementById('home-reminders');
+  const active = state.reminders.filter(r => r.active).slice(0, 3);
+  if (!active.length) { el.innerHTML = '<p class="text-muted text-sm text-center py-4">Belum ada pengingat aktif</p>'; return; }
+  el.innerHTML = active.map(r => {
+    const nextTime = r.times[0];
+    return `<div class="card flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-pri-50 flex items-center justify-center flex-shrink-0">
+        <span class="material-icons-round text-pri-500" style="font-size:20px">medication</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-dark truncate">${r.drug}</p>
+        <p class="text-xs text-muted">${r.dose} &middot; ${r.freq}x/hari</p>
+      </div>
+      <div class="text-right flex-shrink-0">
+        <p class="text-sm font-bold text-pri-500">${nextTime}</p>
+        <p class="text-xs text-muted">hari ini</p>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderHealthTip() {
+  const idx = new Date().getDate() % healthTips.length;
+  document.getElementById('health-tip').textContent = healthTips[idx];
+}
+
+function renderPopularDrugs() {
+  const el = document.getElementById('popular-drugs');
+  const popular = ['paracetamol','cetirizine','omeprazole','amoxicillin','loratadine','ors'];
+  el.innerHTML = popular.map(id => {
+    const d = drugDB[id];
+    return `<div class="flex-shrink-0 cursor-pointer" style="scroll-snap-align:start" onclick="showDrugDetail('${id}')">
+      <div class="card" style="width:140px;padding:14px">
+        <div class="w-9 h-9 rounded-lg bg-pri-50 flex items-center justify-center mb-2">
+          <span class="material-icons-round text-pri-500" style="font-size:18px">medication</span>
+        </div>
+        <p class="text-sm font-semibold text-dark leading-tight">${d.name}</p>
+        <p class="text-xs text-muted mt-0.5">${d.cat}</p>
+        <p class="text-xs text-pri-500 font-semibold mt-1.5">${d.price}</p>
+        ${d.otc ? '<span class="inline-block mt-1.5 px-2 py-0.5 rounded-md bg-green-50 text-green-700 text-xs font-semibold">OTK</span>' : '<span class="inline-block mt-1.5 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-xs font-semibold">Resep</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// SYMPTOM CHECKER
+// ============================================================
+function renderBodyParts() {
+  const el = document.getElementById('body-parts-grid');
+  el.innerHTML = bodyParts.map(bp => `
+    <div class="body-card card flex flex-col items-center py-4 gap-2" data-id="${bp.id}" onclick="selectBody('${bp.id}')">
+      <span class="material-icons-round text-pri-500" style="font-size:28px">${bp.icon}</span>
+      <span class="text-xs font-semibold text-dark">${bp.name}</span>
+    </div>
+  `).join('');
+}
+
+function selectBody(id) {
+  state.selectedBody = id;
+  state.selectedSymptoms = [];
+  document.querySelectorAll('.body-card').forEach(c => c.classList.toggle('selected', c.dataset.id === id));
+  document.getElementById('sym-next-1').disabled = false;
+}
+
+function symNext(step) {
+  document.querySelectorAll('.sym-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('sym-step-' + step).classList.add('active');
+  document.getElementById('sym-progress').style.width = (step * 33) + '%';
+  if (step === 2) renderSymptoms();
+}
+
+function renderSymptoms() {
+  const el = document.getElementById('symptoms-list');
+  const syms = symptoms[state.selectedBody] || [];
+  el.innerHTML = syms.map(s => `
+    <div class="sym-chip" data-id="${s.id}" onclick="toggleSymptom('${s.id}')">
+      <span class="material-icons-round" style="font-size:16px">check</span>
+      ${s.name}
+    </div>
+  `).join('');
+  document.getElementById('sym-next-2').disabled = true;
+}
+
+function toggleSymptom(id) {
+  const idx = state.selectedSymptoms.indexOf(id);
+  if (idx >= 0) state.selectedSymptoms.splice(idx, 1);
+  else state.selectedSymptoms.push(id);
+  document.querySelectorAll('.sym-chip').forEach(c => c.classList.toggle('selected', state.selectedSymptoms.includes(c.dataset.id)));
+  document.getElementById('sym-next-2').disabled = state.selectedSymptoms.length === 0;
+}
+
+function symBack() {
+  const steps = document.querySelectorAll('.sym-step');
+  const current = [...steps].findIndex(s => s.classList.contains('active'));
+  if (current > 0) symNext(current);
+  else navigateTo('home');
+}
+
+function symAnalyze() {
+  symNext(3);
+  document.getElementById('sym-progress').style.width = '75%';
+
+  const aiSteps = ['Mengidentifikasi pola gejala...','Mencocokkan dengan database medis...','Menghitung probabilitas kondisi...','Menyusun rekomendasi...'];
+  const stepsEl = document.getElementById('ai-steps');
+  stepsEl.innerHTML = aiSteps.map(() => `<div class="flex items-center gap-2 text-xs text-muted"><span class="material-icons-round" style="font-size:16px;color:#ccc">schedule</span><span></span></div>`).join('');
+
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < aiSteps.length) {
+      document.getElementById('ai-status').textContent = aiSteps[i];
+      const items = stepsEl.children;
+      items[i].querySelector('.material-icons-round').style.color = 'var(--pri)';
+      items[i].querySelector('.material-icons-round').textContent = 'check_circle';
+      items[i].querySelector('span:last-child').textContent = aiSteps[i];
+      items[i].querySelector('span:last-child').style.color = 'var(--dark)';
+      items[i].querySelector('span:last-child').style.fontWeight = '600';
+      i++;
+    } else {
+      clearInterval(interval);
+      setTimeout(() => {
+        document.getElementById('sym-progress').style.width = '100%';
+        symShowResults();
+      }, 400);
+    }
+  }, 700);
+}
+
+function symShowResults() {
+  const sel = state.selectedSymptoms;
+  const results = conditions.map(c => {
+    const matched = c.symptoms.filter(s => sel.includes(s));
+    const score = matched.length / c.symptoms.length;
+    return { ...c, matchedCount: matched.length, confidence: Math.round(Math.min(score * 100, 92)) };
+  }).filter(c => c.matchedCount >= 2).sort((a, b) => b.confidence - a.confidence).slice(0, 3);
+
+  const el = document.getElementById('sym-results');
+  if (!results.length) {
+    el.innerHTML = '<div class="card text-center py-8"><span class="material-icons-round text-pri-200" style="font-size:48px">search_off</span><p class="text-muted text-sm mt-3">Tidak ditemukan kondisi yang cocok. Coba pilih gejala lain.</p></div>';
+    symNext(4);
+    return;
+  }
+
+  el.innerHTML = results.map((r, idx) => {
+    const sevClass = r.severity === 'ringan' ? 'sev-ringan' : r.severity === 'sedang' ? 'sev-sedang' : 'sev-berat';
+    return `<div class="card" style="border-left:4px solid ${idx===0?'var(--pri)':'var(--bdr)'}">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <span class="inline-block px-2 py-0.5 rounded-md ${sevClass} text-xs font-semibold mb-1.5">${r.severity.charAt(0).toUpperCase()+r.severity.slice(1)}</span>
+          <h3 class="font-bold text-dark text-sm">${r.name}</h3>
+        </div>
+        <span class="text-pri-500 font-bold text-sm">${r.confidence}%</span>
+      </div>
+      <p class="text-xs text-muted leading-relaxed mb-3">${r.desc}</p>
+      <div class="space-y-1.5 mb-3">
+        ${r.tips.map(t => `<div class="flex items-start gap-2"><span class="material-icons-round text-pri-400" style="font-size:14px;margin-top:2px">check_circle</span><span class="text-xs text-dark">${t}</span></div>`).join('')}
+      </div>
+      <div class="flex flex-wrap gap-1.5 mb-3">
+        ${r.drugs.map(d => `<span class="px-2.5 py-1 rounded-lg bg-pri-50 text-pri-600 text-xs font-semibold cursor-pointer" onclick="showDrugDetail('${d}')">${drugDB[d]?.name || d}</span>`).join('')}
+      </div>
+      <div class="p-2.5 rounded-lg bg-red-50 border border-red-100">
+        <div class="flex items-start gap-1.5">
+          <span class="material-icons-round text-red-400" style="font-size:14px;margin-top:1px">info</span>
+          <p class="text-xs text-red-700 leading-relaxed">${r.doc}</p>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  symNext(4);
+}
+
+function symReset() {
+  state.selectedBody = null;
+  state.selectedSymptoms = [];
+  document.querySelectorAll('.body-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('sym-progress').style.width = '33%';
+  symNext(1);
+}
+
+// ============================================================
+// DRUG DETAIL MODAL
+// ============================================================
+function showDrugDetail(id) {
+  const d = drugDB[id];
+  if (!d) return;
+  const el = document.getElementById('drug-detail-content');
+  el.innerHTML = `
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="font-bold text-dark text-lg">${d.name}</h2>
+        <p class="text-muted text-sm">${d.generic}</p>
+      </div>
+      <div class="flex gap-2">
+        ${d.otc ? '<span class="px-2.5 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-semibold">Bebas / OTK</span>' : '<span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold">Resep Dokter</span>'}
+      </div>
+    </div>
+    <div class="flex items-center gap-2 mb-4">
+      <span class="px-2.5 py-1 rounded-lg bg-pri-50 text-pri-600 text-xs font-semibold">${d.cat}</span>
+      <span class="text-xs text-muted">${d.price}</span>
+    </div>
+
+    <div class="mb-4">
+      <h3 class="font-semibold text-dark text-sm mb-2">Merek Dagang</h3>
+      <div class="flex flex-wrap gap-1.5">${d.brand.map(b => `<span class="px-2.5 py-1 rounded-lg bg-gray-50 text-gray-600 text-xs font-medium">${b}</span>`).join('')}</div>
+    </div>
+
+    <div class="mb-4">
+      <h3 class="font-semibold text-dark text-sm mb-2">Dosis</h3>
+      <div class="p-3 rounded-xl bg-pri-50 text-xs text-dark leading-relaxed whitespace-pre-line">${d.dose}</div>
+    </div>
+
+    <div class="mb-4">
+      <h3 class="font-semibold text-dark text-sm mb-2">Indikasi</h3>
+      <div class="flex flex-wrap gap-1.5">${d.ind.map(i => `<span class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium">${i}</span>`).join('')}</div>
+    </div>
+
+    <div class="mb-4">
+      <h3 class="font-semibold text-dark text-sm mb-2">Peringatan</h3>
+      <div class="space-y-1.5">${d.warn.map(w => `<div class="flex items-start gap-2 p-2.5 rounded-lg bg-red-50"><span class="material-icons-round text-red-400" style="font-size:14px;margin-top:2px">warning</span><span class="text-xs text-red-700 leading-relaxed">${w}</span></div>`).join('')}</div>
+    </div>
+
+    <button class="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2" style="background:linear-gradient(135deg,#0D9B6A,#00E59B)" onclick="addDrugToReminder('${d.name} ${d.generic.split(' ')[1] || ''}')">
+      <span class="material-icons-round" style="font-size:18px">alarm_add</span>
+      Tambah ke Pengingat
+    </button>
+  `;
+  document.getElementById('modal-drug').classList.add('show');
+}
+
+function addDrugToReminder(name) {
+  document.getElementById('modal-drug').classList.remove('show');
+  document.getElementById('rem-drug').value = name.trim();
+  setTimeout(() => openReminderModal(), 350);
+}
+
+// ============================================================
+// SCAN OBAT
+// ============================================================
+function performScan() {
+  const btn = document.getElementById('scan-btn');
+  const line = document.getElementById('scan-line');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round animate-spin" style="font-size:20px">sync</span> Memindai...';
+  line.style.background = 'linear-gradient(90deg,transparent,#00E59B,transparent)';
+
+  setTimeout(() => {
+    line.style.background = 'linear-gradient(90deg,transparent,var(--accent),transparent)';
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round" style="font-size:20px">center_focus_strong</span> Mulai Scan';
+
+    // Random drug result
+    const ids = Object.keys(drugDB);
+    const randomId = ids[Math.floor(Math.random() * ids.length)];
+    state.scanCount++;
+
+    // Add to history
+    const histEl = document.getElementById('scan-history');
+    const d = drugDB[randomId];
+    const card = document.createElement('div');
+    card.className = 'card flex items-center gap-3 cursor-pointer';
+    card.onclick = () => showDrugDetail(randomId);
+    card.style.animation = 'bubbleIn .3s ease';
+    card.innerHTML = `
+      <div class="w-10 h-10 rounded-xl bg-pri-50 flex items-center justify-center flex-shrink-0"><span class="material-icons-round text-pri-500" style="font-size:20px">medication</span></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-dark truncate">${d.generic}</p><p class="text-xs text-muted">Scan baru saja &middot; ${Math.round(85 + Math.random()*13)}% akurat</p></div>
+      <span class="material-icons-round text-muted" style="font-size:18px">chevron_right</span>
+    `;
+    histEl.insertBefore(card, histEl.firstChild);
+
+    showToast('Obat terdeteksi: ' + d.name);
+    setTimeout(() => showDrugDetail(randomId), 500);
+  }, 2500);
+}
+
+// ============================================================
+// REMINDERS
+// ============================================================
+function renderReminders() {
+  const el = document.getElementById('reminder-list');
+  const empty = document.getElementById('reminder-empty');
+  if (!state.reminders.length) { el.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  el.innerHTML = state.reminders.map(r => `
+    <div class="card flex items-center gap-3 ${r.active ? '' : 'opacity-50'}">
+      <div class="w-10 h-10 rounded-xl ${r.active ? 'bg-pri-50' : 'bg-gray-100'} flex items-center justify-center flex-shrink-0">
+        <span class="material-icons-round ${r.active ? 'text-pri-500' : 'text-gray-400'}" style="font-size:20px">medication</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-dark truncate">${r.drug}</p>
+        <p class="text-xs text-muted">${r.dose} &middot; ${r.times.join(', ')}</p>
+        <p class="text-xs text-muted">${r.notes ? r.notes + ' &middot; ' : ''}${r.days} hari</p>
+      </div>
+      <div class="toggle ${r.active ? 'on' : ''}" onclick="toggleReminder(${r.id})" role="switch" aria-checked="${r.active}" tabindex="0"></div>
+    </div>
+  `).join('');
+}
+
+function toggleReminder(id) {
+  const r = state.reminders.find(r => r.id === id);
+  if (r) {
+    r.active = !r.active;
+    renderReminders();
+    renderHomeReminders();
+    showToast(r.active ? 'Pengingat diaktifkan' : 'Pengingat dinonaktifkan');
+  }
+}
+
+function openReminderModal() {
+  document.getElementById('rem-drug').value = '';
+  document.getElementById('rem-dose').value = '';
+  document.getElementById('rem-freq').value = '2';
+  document.getElementById('rem-days').value = '5';
+  document.getElementById('rem-notes').value = '';
+  renderTimeInputs();
+  document.getElementById('modal-reminder').classList.add('show');
+}
+
+function renderTimeInputs() {
+  const freq = parseInt(document.getElementById('rem-freq').value);
+  const defaults = ['08:00','14:00','20:00'];
+  const el = document.getElementById('rem-times');
+  el.innerHTML = Array.from({length: freq}, (_, i) => `
+    <input type="time" class="input-field" id="rem-time-${i}" value="${defaults[i] || '12:00'}">
+  `).join('');
+}
+
+document.getElementById('rem-freq').addEventListener('change', renderTimeInputs);
+
+function saveReminder() {
+  const drug = document.getElementById('rem-drug').value.trim();
+  const dose = document.getElementById('rem-dose').value.trim();
+  if (!drug) { showToast('Nama obat harus diisi'); return; }
+  if (!dose) { showToast('Dosis harus diisi'); return; }
+
+  const freq = parseInt(document.getElementById('rem-freq').value);
+  const times = Array.from({length: freq}, (_, i) => {
+    const inp = document.getElementById('rem-time-' + i);
+    return inp ? inp.value : '12:00';
+  }).sort();
+
+  state.reminders.unshift({
+    id: Date.now(),
+    drug, dose, freq, times,
+    active: true,
+    days: parseInt(document.getElementById('rem-days').value) || 5,
+    notes: document.getElementById('rem-notes').value.trim()
+  });
+
+  document.getElementById('modal-reminder').classList.remove('show');
+  renderReminders();
+  renderHomeReminders();
+  showToast('Pengingat berhasil ditambahkan');
+}
+
+// ============================================================
+// CHATBOT
+// ============================================================
+function initChat() {
+  addBotMessage('Halo! Saya MediCare Assistant, siap membantu Anda. Silakan tanyakan tentang keluhan kesehatan, informasi obat, atau tips kesehatan lainnya.', false);
+}
+
+function addBotMessage(text, animate) {
+  state.chatHistory.push({ role: 'bot', text });
+  const el = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-bubble chat-bot';
+  if (animate) div.style.animation = 'bubbleIn .3s ease';
+  div.innerHTML = text;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function addUserMessage(text) {
+  state.chatHistory.push({ role: 'user', text });
+  const el = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-bubble chat-user';
+  div.textContent = text;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function showTyping() {
+  const el = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-bubble chat-bot';
+  div.id = 'typing-indicator';
+  div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+function formatChatResponse(data) {
+  return `
+    <p class="font-semibold text-pri-600 text-sm mb-1">${data.title}</p>
+    <p class="mb-2">${data.body}</p>
+    <div class="space-y-1 mb-2">
+      ${data.tips.map(t => `<div class="flex items-start gap-1.5"><span class="material-icons-round text-pri-400" style="font-size:13px;margin-top:2px">check_circle</span><span>${t}</span></div>`).join('')}
+    </div>
+    <div class="p-2 rounded-lg bg-red-50 mt-2">
+      <div class="flex items-start gap-1.5"><span class="material-icons-round text-red-400" style="font-size:13px;margin-top:1px">info</span><span class="text-xs text-red-700">${data.doc}</span></div>
+    </div>
+    <p class="text-xs text-muted mt-2 italic">Disclaimer: Informasi ini bersifat edukatif dan bukan pengganti konsultasi medis.</p>
+  `;
+}
+
+function getChatResponse(input) {
+  const lower = input.toLowerCase();
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const r of chatResponses) {
+    let score = 0;
+    for (const kw of r.kw) {
+      if (lower.includes(kw)) score++;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = r;
+    }
+  }
+
+  return bestScore > 0 ? bestMatch : defaultChat;
+}
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  addUserMessage(text);
+  showTyping();
+
+  const delay = 800 + Math.random() * 800;
+  setTimeout(() => {
+    hideTyping();
+    const resp = getChatResponse(text);
+    addBotMessage(formatChatResponse(resp), true);
+  }, delay);
+}
+
+function sendQuickChat(text) {
+  document.getElementById('chat-input').value = text;
+  sendChat();
+}
+
+// ============================================================
+// MODAL CLOSE
+// ============================================================
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => {
+    if (e.target === m) m.classList.remove('show');
+  });
+});
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  updateClock();
+  setInterval(updateClock, 10000);
+  updateGreeting();
+
+  renderBodyParts();
+  renderHomeReminders();
+  renderHealthTip();
+  renderPopularDrugs();
+  renderReminders();
+  initChat();
+
+  // Splash hide
+  setTimeout(() => {
+    documenst.getElementById('splash').classList.add('hide');
+    setTimeout(() => document.getElementById('splash').remove(), 500);
+  }, 1500);
+}
+
+init();
+</script>
+</body>
+</html>
